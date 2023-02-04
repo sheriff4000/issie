@@ -73,6 +73,7 @@ let drawSymbolHook
             let winPoints = sprintf $"{x-halfWinWidth},{y+halfWinHeight},{x+halfWinWidth},{y+halfWinHeight},{x+halfWinWidth},{y-halfWinHeight},{x-halfWinWidth},{y-halfWinHeight}"
             [makePolygon winPoints {defaultPolygon with Fill = "No"; FillOpacity = 0.0; Stroke = "Black"; StrokeWidth="2px"}]
 
+        //makes a row of windows at a specified y coordinate
         let makeRow y = 
             let windowPlacer offset winState currWin =
                 let multiplierH x = 
@@ -93,7 +94,7 @@ let drawSymbolHook
                 |> List.concat
 
             |_ -> failwithf "error - should not be here"
-
+        //uses makeRow to place rows
         let makeAll =
             let centre = (height-25)/2
             let windowStacker offset winState currRow =
@@ -114,7 +115,7 @@ let drawSymbolHook
                 ||> List.scan (windowStacker (halfWinHeight + 4))
                 |> List.concat
             | _ -> failwithf "error - shouldn't be here"
-
+        
         let makeHouse =
             let housePoints = sprintf $"0,0,0,{height},{width},{height},{width},0"
             [makePolygon housePoints {defaultPolygon with Fill = "No"; FillOpacity = 0.0; Stroke = "Black"; StrokeWidth="4px"}]
