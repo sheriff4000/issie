@@ -25,7 +25,8 @@ open Symbol
 
 /// submodule for constant definitions used in this module
 module Constants =
-    let xxx = 111 // sample constant definition (with bad name) delete and replace
+    let house_height = 200
+    let house_width = 200 // sample constant definition (with bad name) delete and replace
                   // your constants. Delete this comment as well!
 
 /// Record containing BusWire helper functions that might be needed by updateWireHook
@@ -50,16 +51,82 @@ type Tick3BusWireHelpers = {
 /// displayed on screen.
 //  for Tick 3 see the Tick 3 Powerpoint for what you need to do.
 //  the house picture, and its dependence on the two parameters, will be assessed via interview.
-let drawSymbolHook 
+let drawSymbolHook
         (symbol:Symbol) 
         (theme:ThemeType) 
         : ReactElement list option =
     // replace the code below by your own code
     match symbol.Component.Type with
-    | Constant1 (width,constValue, _) ->
-        printfn $"CONSTANT: width={width} ConstVale={constValue}"
-    | _ -> printfn "Symbol Hook"
-    None
+    | Constant1 (windowsH, windowsV, _) ->
+        printfn $"HOUSE: window hori ={windowsH} window vert={windowsV}"
+        let width = Constants.house_width
+        let height = Constants.house_height
+        let halfWinWidth = ((width / windowsH) - 8) / 2 
+        let halfWinHeight = ((( height - 35) / int windowsV) - 8) / 3
+        
+        let makeDoor =
+            let middleW = width / 2
+            let doorPoints =  sprintf $"{middleW-10},{height},{middleW+10},{height},{middleW+10},{height-25},{middleW-10},{height-25}"
+            [makePolygon doorPoints {defaultPolygon with Fill = "No"; FillOpacity = 0.0; Stroke = "Black"; StrokeWidth="2px"}]
+
+        let makeWindow x y =
+            let winPoints = sprintf $"{x-halfWinWidth},{y+halfWinHeight},{x+halfWinWidth},{y+halfWinHeight},{x+halfWinWidth},{y-halfWinHeight},{x-halfWinWidth},{y-halfWinHeight}"
+            [makePolygon winPoints {defaultPolygon with Fill = "No"; FillOpacity = 0.0; Stroke = "Black"; StrokeWidth="2px"}]
+
+        let makeRow y = 
+            let windowPlacer offset winState currWin =
+                let multiplierH x = 
+                    match x with
+                    |0 -> 0
+                    |n -> ((2 * n)-1) * ((width/windowsH)/2)
+                
+                makeWindow (width/2 + (if currWin <> 0 then offset else 0) + (multiplierH currWin)) y @ makeWindow (width/2 - (if currWin <> 0 then offset else 0) - (multiplierH currWin)) y
+
+            match windowsH % 2 with
+            | 0 ->
+                ([],[1..windowsH/2])
+                ||> List.scan (windowPlacer 0)
+                |> List.concat
+            | 1 ->  
+                ([],[0..windowsH/2])
+                ||> List.scan (windowPlacer (halfWinWidth + 4))
+                |> List.concat
+
+            |_ -> failwithf "error - should not be here"
+
+        let makeAll =
+            let centre = (height-25)/2
+            let windowStacker offset winState currRow =
+                let multiplierV x = 
+                    match x with
+                    |0 -> 0
+                    |n -> ((2 * n)-1) * ((height/int windowsV)/2)
+
+                makeRow (centre + (if currRow <> 0 then offset else 0) + multiplierV currRow ) @ makeRow (centre - (if currRow <> 0 then offset else 0) - multiplierV currRow )
+
+            match int windowsV % 2 with
+            | 0 ->
+                ([],[1..int windowsV/2])
+                ||> List.scan (windowStacker 0)
+                |> List.concat
+            | 1 ->  
+                ([],[0..int windowsV/2])
+                ||> List.scan (windowStacker (halfWinHeight + 4))
+                |> List.concat
+            | _ -> failwithf "error - shouldn't be here"
+
+        let makeHouse =
+            let housePoints = sprintf $"0,0,0,{height},{width},{height},{width},0"
+            [makePolygon housePoints {defaultPolygon with Fill = "No"; FillOpacity = 0.0; Stroke = "Black"; StrokeWidth="4px"}]
+    
+        Some (makeHouse @ makeDoor @ makeAll) 
+
+        //Some [makeLine 0 0 10 10 defaultLine]
+        // let points = "0,0,0,100,100,100,100,0"
+        // Some [makePolygon points {defaultPolygon with Fill = "Black"; FillOpacity = 0.0; Stroke = "DodgerBlue"; StrokeWidth="2px"}] 
+        //Some [makeText 0 0 "hello test" defaultText]
+        
+    | _ -> None
 
 /// Return Some newWire to replace updateWire by your own code defined here.
 /// Choose which wires you control by returning None to use the
