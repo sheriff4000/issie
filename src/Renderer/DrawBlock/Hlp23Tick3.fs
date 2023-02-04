@@ -57,7 +57,7 @@ let drawSymbolHook
         : ReactElement list option =
     // replace the code below by your own code
     match symbol.Component.Type with
-    | Constant1 (windowsH, windowsV, _) ->
+    | Constant1 (windowsH, windowsV, _) when windowsH > 0 && windowsH <=10 && windowsV > 0 && windowsV <= 3 ->
         printfn $"HOUSE: window hori ={windowsH} window vert={windowsV}"
         let width = Constants.house_width
         let height = Constants.house_height
