@@ -61,8 +61,13 @@ let drawSymbolHook
         printfn $"HOUSE: window hori ={windowsH} window vert={windowsV}"
         let width = Constants.house_width
         let height = Constants.house_height
-        let halfWinWidth = ((width / windowsH) - 8) / 2 
-        let halfWinHeight = ((( height - 35) / int windowsV) - 8) / 3
+        let halfWinWidth = 
+            let maxWidth = ((width / windowsH) - 8) / 2 
+            min (width/4) maxWidth
+
+        let halfWinHeight = 
+            let maxHeight = ((( height - 35) / int windowsV) - 8) / 3
+            min (height/10) maxHeight
         
         let makeDoor =
             let middleW = width / 2
@@ -75,13 +80,15 @@ let drawSymbolHook
 
         //makes a row of windows at a specified y coordinate
         let makeRow y = 
-            let windowPlacer offset winState currWin =
+            let windowPlacer offset _ currWin =
                 let multiplierH x = 
                     match x with
                     |0 -> 0
                     |n -> ((2 * n)-1) * ((width/windowsH)/2)
+
+                let useOffset = (if currWin <> 0 then offset else 0)
                 
-                makeWindow (width/2 + (if currWin <> 0 then offset else 0) + (multiplierH currWin)) y @ makeWindow (width/2 - (if currWin <> 0 then offset else 0) - (multiplierH currWin)) y
+                makeWindow (width/2 + useOffset + (multiplierH currWin)) y @ makeWindow (width/2 - useOffset - (multiplierH currWin)) y
 
             match windowsH % 2 with
             | 0 ->
@@ -97,13 +104,14 @@ let drawSymbolHook
         //uses makeRow to place rows
         let makeAll =
             let centre = (height-25)/2
-            let windowStacker offset winState currRow =
+            let windowStacker offset _ currRow =
                 let multiplierV x = 
                     match x with
                     |0 -> 0
                     |n -> ((2 * n)-1) * ((height/int windowsV)/2)
-
-                makeRow (centre + (if currRow <> 0 then offset else 0) + multiplierV currRow ) @ makeRow (centre - (if currRow <> 0 then offset else 0) - multiplierV currRow )
+                
+                let useOffset = (if currRow <> 0 then offset else 0)
+                makeRow (centre + useOffset + multiplierV currRow ) @ makeRow (centre - useOffset - multiplierV currRow )
 
             match int windowsV % 2 with
             | 0 ->
@@ -121,11 +129,6 @@ let drawSymbolHook
             [makePolygon housePoints {defaultPolygon with Fill = "No"; FillOpacity = 0.0; Stroke = "Black"; StrokeWidth="4px"}]
     
         Some (makeHouse @ makeDoor @ makeAll) 
-
-        //Some [makeLine 0 0 10 10 defaultLine]
-        // let points = "0,0,0,100,100,100,100,0"
-        // Some [makePolygon points {defaultPolygon with Fill = "Black"; FillOpacity = 0.0; Stroke = "DodgerBlue"; StrokeWidth="2px"}] 
-        //Some [makeText 0 0 "hello test" defaultText]
         
     | _ -> None
 
@@ -151,8 +154,43 @@ let updateWireHook
     let segmentInfo =
         wire.Segments
         |> List.map (fun (seg:Segment) -> seg.Length,seg.Mode)
-    printfn "%s" $"Wire: Initial Orientation={wire.InitialOrientation}\nSegments={segmentInfo}"
-    None
+
+    let distToMove = 
+        let start = 
+            segmentInfo[0..2]
+            |> List.mapi (fun i (len,_) -> len)
+            |> List.map (fun len -> abs len)
+            |> List.reduce (+)
+
+        let tail = 
+            segmentInfo[4..6]
+            |> List.mapi (fun i (len,_) ->  len)
+            |> List.map (fun len -> abs len)
+            |> List.reduce (+)
+
+        if (tail / start) <> 3.0 then
+            ((tail+start) / 4.0) - start
+        else
+            0.0
+        
+    let prevSegLen = wire.Segments[2].Length
+    let postSegLen = wire.Segments[4].Length
+    let newPrevSegLen = prevSegLen + distToMove
+    let newPostSegLen = postSegLen - distToMove
+    let newPrevSeg = {wire.Segments[2] with Length = newPrevSegLen}
+    let newPostSeg = {wire.Segments[4] with Length = newPostSegLen}
+
+    let newSegList = wire.Segments[0..1] @ [newPrevSeg] @ [wire.Segments[3]] @ [newPostSeg] @ wire.Segments[5..6]
+    
+    if List.length wire.Segments = 7 then
+        Some ({wire with Segments = newSegList})
+    else    
+        Some wire
+
+    
+
+    // printfn "%s" $"Wire: Initial Orientation={wire.InitialOrientation}\nSegments={segmentInfo}"
+    // None
 
 //---------------------------------------------------------------------//
 //-------included here because it will be used in project work---------//
