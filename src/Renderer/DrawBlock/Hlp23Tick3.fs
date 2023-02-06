@@ -80,7 +80,7 @@ let drawSymbolHook
 
         //makes a row of windows at a specified y coordinate
         let makeRow y = 
-            let windowPlacer offset _ currWin =
+            let windowPlacer offset currWin =
                 let multiplierH x = 
                     match x with
                     |0 -> 0
@@ -92,19 +92,19 @@ let drawSymbolHook
 
             match windowsH % 2 with
             | 0 ->
-                ([],[1..windowsH/2])
-                ||> List.scan (windowPlacer 0)
+                [1..windowsH/2]
+                |> List.map (windowPlacer 0)
                 |> List.concat
             | 1 ->  
-                ([],[0..windowsH/2])
-                ||> List.scan (windowPlacer (halfWinWidth + 4))
+                [0..windowsH/2]
+                |> List.map (windowPlacer (halfWinWidth + 4))
                 |> List.concat
 
             |_ -> failwithf "error - should not be here"
         //uses makeRow to place rows
         let makeAll =
             let centre = (height-25)/2
-            let windowStacker offset _ currRow =
+            let windowStacker offset currRow =
                 let multiplierV x = 
                     match x with
                     |0 -> 0
@@ -115,12 +115,12 @@ let drawSymbolHook
 
             match int windowsV % 2 with
             | 0 ->
-                ([],[1..int windowsV/2])
-                ||> List.scan (windowStacker 0)
+                [1..int windowsV/2]
+                |> List.map (windowStacker 0)
                 |> List.concat
             | 1 ->  
-                ([],[0..int windowsV/2])
-                ||> List.scan (windowStacker (halfWinHeight + 4))
+                [0..int windowsV/2]
+                |> List.map (windowStacker (halfWinHeight + 4))
                 |> List.concat
             | _ -> failwithf "error - shouldn't be here"
         
